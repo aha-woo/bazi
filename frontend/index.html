@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>八字计算器 - 测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result-section {
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+        }
+
+        .sizhu-display {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .sizhu-item {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+        }
+
+        .sizhu-item h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .sizhu-item .ganzhi {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .sizhu-item .detail {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .wuxing-chart {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .wuxing-item {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .wuxing-wood { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .wuxing-fire { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+        .wuxing-earth { background: linear-gradient(135deg, #f09819 0%, #ff512f 100%); }
+        .wuxing-metal { background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%); }
+        .wuxing-water { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
+
+        .wuxing-item .count {
+            font-size: 2em;
+            margin-top: 5px;
+        }
+
+        .interpretation {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            line-height: 1.8;
+        }
+
+        .interpretation h3 {
+            color: #667eea;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .interpretation p {
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-box p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row, .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .sizhu-display {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .wuxing-chart {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔮 八字计算器</h1>
+            <p>输入出生信息，获取专业的八字命理解读</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 左侧：输入表单 -->
+            <div class="card">
+                <h2>📅 出生信息</h2>
+                
+                <div class="info-box">
+                    <p><strong>API地址：</strong></p>
+                    <p id="apiUrlDisplay">http://localhost:8000</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">请确保后端服务已启动</p>
+                </div>
+
+                <form id="baziForm">
+                    <div class="form-group">
+                        <label for="apiUrl">API服务地址</label>
+                        <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://your-server:8000">
+                    </div>
+
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="year">年份</label>
+                            <input type="number" id="year" min="1900" max="2100" value="1990" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="month">月份</label>
+                            <input type="number" id="month" min="1" max="12" value="5" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="day">日期</label>
+                            <input type="number" id="day" min="1" max="31" value="15" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hour">小时</label>
+                            <input type="number" id="hour" min="0" max="23" value="14" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="minute">分钟</label>
+                            <input type="number" id="minute" min="0" max="59" value="30" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timezone">时区</label>
+                        <select id="timezone" required>
+                            <option value="Asia/Shanghai">中国北京时间 (UTC+8)</option>
+                            <option value="Asia/Hong_Kong">香港 (UTC+8)</option>
+                            <option value="Asia/Taipei">台北 (UTC+8)</option>
+                            <option value="Asia/Tokyo">东京 (UTC+9)</option>
+                            <option value="Asia/Seoul">首尔 (UTC+9)</option>
+                            <option value="Asia/Singapore">新加坡 (UTC+8)</option>
+                            <option value="America/New_York">纽约 (UTC-5/-4)</option>
+                            <option value="America/Los_Angeles">洛杉矶 (UTC-8/-7)</option>
+                            <option value="Europe/London">伦敦 (UTC+0/+1)</option>
+                            <option value="UTC">UTC标准时间</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="userId">用户ID（可选）</label>
+                        <input type="text" id="userId" placeholder="例如：user123">
+                    </div>
+
+                    <button type="submit" class="btn" id="submitBtn">🔮 开始计算</button>
+                </form>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 15px;">正在计算八字...</p>
+                </div>
+
+                <div class="error" id="error"></div>
+            </div>
+
+            <!-- 右侧：结果显示 -->
+            <div class="card result-section" id="resultSection">
+                <h2>✨ 八字解读</h2>
+
+                <!-- 四柱显示 -->
+                <div class="sizhu-display" id="sizhuDisplay">
+                    <div class="sizhu-item">
+                        <h3>年柱</h3>
+                        <div class="ganzhi" id="yearPillar">--</div>
+                        <div class="detail" id="yearDetail">-- --</div>
+                    </div>
+                    <div class="sizhu-item">
+                        <h3>月柱</h3>
+                        <div class="ganzhi" id="monthPillar">--</div>
+                        <div class="detail" id="monthDetail">-- --</div>
+                    </div>
+                    <div class="sizhu-item">
+                        <h3>日柱</h3>
+                        <div class="ganzhi" id="dayPillar">--</div>
+                        <div class="detail" id="dayDetail">-- --</div>
+                    </div>
+                    <div class="sizhu-item">
+                        <h3>时柱</h3>
+                        <div class="ganzhi" id="hourPillar">--</div>
+                        <div class="detail" id="hourDetail">-- --</div>
+                    </div>
+                </div>
+
+                <!-- 日主信息 -->
+                <div style="text-align: center; margin: 20px 0; padding: 15px; background: #f0f8ff; border-radius: 8px;">
+                    <p style="color: #666;">日主（命主）</p>
+                    <p style="font-size: 1.5em; font-weight: bold; color: #667eea;" id="rigan">--</p>
+                    <p style="color: #888;" id="riganWuxing">五行属--</p>
+                </div>
+
+                <!-- 五行分析 -->
+                <h3 style="margin-top: 20px; color: #667eea;">五行分析</h3>
+                <div class="wuxing-chart" id="wuxingChart">
+                    <div class="wuxing-item wuxing-wood">
+                        <div>木</div>
+                        <div class="count" id="wuxingWood">0</div>
+                    </div>
+                    <div class="wuxing-item wuxing-fire">
+                        <div>火</div>
+                        <div class="count" id="wuxingFire">0</div>
+                    </div>
+                    <div class="wuxing-item wuxing-earth">
+                        <div>土</div>
+                        <div class="count" id="wuxingEarth">0</div>
+                    </div>
+                    <div class="wuxing-item wuxing-metal">
+                        <div>金</div>
+                        <div class="count" id="wuxingMetal">0</div>
+                    </div>
+                    <div class="wuxing-item wuxing-water">
+                        <div>水</div>
+                        <div class="count" id="wuxingWater">0</div>
+                    </div>
+                </div>
+
+                <!-- 命理解读 -->
+                <div class="interpretation" id="interpretation">
+                    <h3>📖 基础解读</h3>
+                    <p id="basicInterpretation">--</p>
+
+                    <h3>🌟 性格特征</h3>
+                    <p id="personality">--</p>
+
+                    <h3>🎯 喜用神</h3>
+                    <p id="xiyongshen">--</p>
+
+                    <h3>💡 建议</h3>
+                    <p id="advice">--</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
