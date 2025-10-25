@@ -15,10 +15,12 @@
 
 【Windows用户】
 
-1. 安装MySQL数据库
-   - 下载：https://dev.mysql.com/downloads/mysql/
+1. 安装数据库（MySQL 或 MariaDB，任选其一）
+   - MySQL下载：https://dev.mysql.com/downloads/mysql/
+   - 或使用已有的MariaDB服务（完全兼容）
    - 创建数据库：
      mysql -u root -p
+     # 或使用 mariadb 命令
      CREATE DATABASE bazi_db CHARACTER SET utf8mb4;
      EXIT;
 
@@ -42,14 +44,17 @@
 
 【Linux/Mac用户】
 
-1. 安装MySQL
+1. 安装数据库（MySQL 或使用现有的 MariaDB）
    Ubuntu: sudo apt install mysql-server
+         # 或如果已有 MariaDB，直接使用即可
    Mac: brew install mysql
    
    创建数据库：
-   sudo mysql
+   sudo mysql    # 或 sudo mariadb
    CREATE DATABASE bazi_db CHARACTER SET utf8mb4;
    EXIT;
+   
+   💡 提示：如果已有 MariaDB 服务，部署脚本会自动检测并使用！
 
 2. 启动后端服务
    cd backend
@@ -125,11 +130,18 @@ fetch('http://localhost:8000/api/v1/bazi/calculate', {
    chmod +x deploy.sh
    ./deploy.sh
    
-   按提示输入数据库配置，脚本会自动完成所有部署工作
+   脚本会自动：
+   - ✅ 检测现有的 MariaDB/MySQL 服务
+   - ✅ 询问是否使用现有数据库（如有 MariaDB 选择 y）
+   - ✅ 支持自定义数据库主机和端口
+   - ✅ 自动创建数据库和用户
+   - ✅ 完成所有配置
 
 4. 访问API
    http://your-server-ip:8000
    http://your-server-ip:8000/docs
+
+💡 MariaDB 用户：脚本会自动识别并使用您的 MariaDB！
 
 
 【方法二：手动部署】

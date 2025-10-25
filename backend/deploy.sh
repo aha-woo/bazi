@@ -28,30 +28,88 @@ sudo apt upgrade -y
 
 # 2. 安装依赖
 echo -e "${GREEN}[2/8] 安装系统依赖...${NC}"
-sudo apt install -y python3 python3-pip python3-venv mysql-server nginx
+echo "检测到的数据库服务："
+if systemctl is-active --quiet mariadb; then
+    echo -e "${GREEN}  ✓ MariaDB (运行中)${NC}"
+    DB_SERVICE="mariadb"
+elif systemctl is-active --quiet mysql; then
+    echo -e "${GREEN}  ✓ MySQL (运行中)${NC}"
+    DB_SERVICE="mysql"
+else
+    echo -e "${YELLOW}  ! 未检测到运行中的数据库服务${NC}"
+    DB_SERVICE="none"
+fi
 
-# 3. 配置MySQL
-echo -e "${GREEN}[3/8] 配置MySQL...${NC}"
-read -p "请输入MySQL数据库名称 [bazi_db]: " DB_NAME
+echo ""
+read -p "是否使用现有的数据库服务? (y/n) [y]: " USE_EXISTING_DB
+USE_EXISTING_DB=${USE_EXISTING_DB:-y}
+
+if [[ $USE_EXISTING_DB =~ ^[Yy]$ ]] && [[ $DB_SERVICE != "none" ]]; then
+    echo -e "${GREEN}将使用现有的 ${DB_SERVICE} 服务${NC}"
+    # 只安装Python和Nginx，不安装数据库
+    sudo apt install -y python3 python3-pip python3-venv nginx
+else
+    echo -e "${YELLOW}将安装新的MySQL服务${NC}"
+    sudo apt install -y python3 python3-pip python3-venv mysql-server nginx
+    DB_SERVICE="mysql"
+    # 启动MySQL
+    sudo systemctl start mysql
+    sudo systemctl enable mysql
+fi
+
+# 3. 配置数据库
+echo -e "${GREEN}[3/8] 配置数据库...${NC}"
+read -p "请输入数据库名称 [bazi_db]: " DB_NAME
 DB_NAME=${DB_NAME:-bazi_db}
 
-read -p "请输入MySQL用户名 [bazi_user]: " DB_USER
+read -p "请输入数据库用户名 [bazi_user]: " DB_USER
 DB_USER=${DB_USER:-bazi_user}
 
-read -sp "请输入MySQL密码: " DB_PASSWORD
+read -sp "请输入数据库密码: " DB_PASSWORD
 echo
 
-# 启动MySQL
-sudo systemctl start mysql
-sudo systemctl enable mysql
+read -p "请输入数据库主机 [localhost]: " DB_HOST
+DB_HOST=${DB_HOST:-localhost}
+
+read -p "请输入数据库端口 [3306]: " DB_PORT
+DB_PORT=${DB_PORT:-3306}
+
+# 确保数据库服务运行
+if ! systemctl is-active --quiet $DB_SERVICE; then
+    echo -e "${YELLOW}启动 ${DB_SERVICE} 服务...${NC}"
+    sudo systemctl start $DB_SERVICE
+    sudo systemctl enable $DB_SERVICE
+fi
 
 # 创建数据库和用户
-sudo mysql -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';"
-sudo mysql -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
-sudo mysql -e "FLUSH PRIVILEGES;"
+echo -e "${GREEN}创建数据库和用户...${NC}"
+if [[ $DB_SERVICE == "mariadb" ]]; then
+    sudo mariadb -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || \
+    mariadb -u root -p -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    
+    sudo mariadb -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASSWORD}';" 2>/dev/null || \
+    mariadb -u root -p -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASSWORD}';"
+    
+    sudo mariadb -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';" 2>/dev/null || \
+    mariadb -u root -p -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';"
+    
+    sudo mariadb -e "FLUSH PRIVILEGES;" 2>/dev/null || \
+    mariadb -u root -p -e "FLUSH PRIVILEGES;"
+else
+    sudo mysql -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || \
+    mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    
+    sudo mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASSWORD}';" 2>/dev/null || \
+    mysql -u root -p -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASSWORD}';"
+    
+    sudo mysql -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';" 2>/dev/null || \
+    mysql -u root -p -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'${DB_HOST}';"
+    
+    sudo mysql -e "FLUSH PRIVILEGES;" 2>/dev/null || \
+    mysql -u root -p -e "FLUSH PRIVILEGES;"
+fi
 
-echo -e "${GREEN}MySQL配置完成${NC}"
+echo -e "${GREEN}数据库配置完成${NC}"
 
 # 4. 创建虚拟环境
 echo -e "${GREEN}[4/8] 创建Python虚拟环境...${NC}"
@@ -67,10 +125,12 @@ pip install -r requirements.txt
 echo -e "${GREEN}[6/8] 配置环境变量...${NC}"
 if [ ! -f .env ]; then
     cp env.example .env
-    sed -i "s|DATABASE_URL=.*|DATABASE_URL=mysql+pymysql://${DB_USER}:${DB_PASSWORD}@localhost:3306/${DB_NAME}|g" .env
+    sed -i "s|DATABASE_URL=.*|DATABASE_URL=mysql+pymysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}|g" .env
     echo -e "${GREEN}.env文件已创建${NC}"
+    echo -e "${GREEN}数据库连接字符串: mysql+pymysql://${DB_USER}:****@${DB_HOST}:${DB_PORT}/${DB_NAME}${NC}"
 else
     echo -e "${YELLOW}.env文件已存在，跳过创建${NC}"
+    echo -e "${YELLOW}如需修改配置，请手动编辑 .env 文件${NC}"
 fi
 
 # 7. 创建systemd服务

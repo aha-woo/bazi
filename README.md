@@ -332,7 +332,7 @@ data class BaziRequest(
 ### 后端
 - **语言**: Python 3.8+
 - **框架**: FastAPI 0.104+
-- **数据库**: MySQL 5.7+
+- **数据库**: MySQL 5.7+ / MariaDB 10.3+ (完全兼容)
 - **ORM**: SQLAlchemy 2.0+
 - **服务器**: Uvicorn
 - **部署**: systemd + Nginx

@@ -1,0 +1,271 @@
+========================================
+MariaDB 快速参考
+========================================
+
+✅ 本项目完全支持 MariaDB 数据库！
+
+MariaDB 是 MySQL 的一个分支，100% 兼容 MySQL。
+使用方法完全相同，无需修改任何代码。
+
+========================================
+一、使用自动部署脚本（最简单）
+========================================
+
+cd backend
+chmod +x deploy.sh
+./deploy.sh
+
+脚本会：
+1. 自动检测 MariaDB 服务
+2. 询问是否使用现有数据库
+3. 自动创建数据库和用户
+4. 配置正确的连接字符串
+5. 启动API服务
+
+示例输出：
+-----------------
+检测到的数据库服务：
+  ✓ MariaDB (运行中)
+
+是否使用现有的数据库服务? (y/n) [y]: y
+将使用现有的 mariadb 服务
+请输入数据库名称 [bazi_db]: bazi_db
+请输入数据库用户名 [bazi_user]: bazi_user
+请输入数据库密码: ********
+请输入数据库主机 [localhost]: localhost
+请输入数据库端口 [3306]: 3306
+-----------------
+
+========================================
+二、手动配置 MariaDB
+========================================
+
+1. 登录 MariaDB
+-----------------
+sudo mariadb
+# 或
+mariadb -u root -p
+
+2. 创建数据库和用户
+-----------------
+CREATE DATABASE bazi_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'bazi_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON bazi_db.* TO 'bazi_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+
+3. 配置连接字符串
+-----------------
+编辑 backend/.env 文件：
+
+DATABASE_URL=mysql+pymysql://bazi_user:your_password@localhost:3306/bazi_db
+
+注意：驱动名称仍然是 mysql+pymysql（MariaDB兼容MySQL协议）
+
+4. 启动服务
+-----------------
+cd backend
+python -m uvicorn app.main:app --reload
+
+========================================
+三、MariaDB vs MySQL 对比
+========================================
+
+项目        MySQL           MariaDB         备注
+------------------------------------------------------
+驱动        mysql+pymysql   mysql+pymysql   ✅ 相同
+端口        3306            3306            ✅ 相同
+命令        mysql           mariadb/mysql   ✅ 都可用
+语法        SQL             SQL             ✅ 兼容
+字符集      utf8mb4         utf8mb4         ✅ 支持
+连接方式    TCP/Socket      TCP/Socket      ✅ 相同
+
+结论：对于本项目，两者完全相同！
+
+========================================
+四、常用 MariaDB 命令
+========================================
+
+# 启动服务
+sudo systemctl start mariadb
+
+# 停止服务
+sudo systemctl stop mariadb
+
+# 重启服务
+sudo systemctl restart mariadb
+
+# 查看状态
+sudo systemctl status mariadb
+
+# 开机自启
+sudo systemctl enable mariadb
+
+# 登录数据库
+sudo mariadb
+# 或
+mariadb -u root -p
+
+# 查看数据库列表
+SHOW DATABASES;
+
+# 查看用户
+SELECT user, host FROM mysql.user;
+
+# 查看当前数据库
+SELECT DATABASE();
+
+# 查看表
+SHOW TABLES;
+
+# 查看表结构
+DESCRIBE bazi_records;
+
+========================================
+五、远程 MariaDB 配置
+========================================
+
+如果 MariaDB 在另一台服务器：
+
+1. MariaDB 服务器配置
+-----------------------
+# 编辑配置文件
+sudo nano /etc/mysql/mariadb.conf.d/50-server.cnf
+
+# 修改 bind-address
+bind-address = 0.0.0.0
+
+# 重启 MariaDB
+sudo systemctl restart mariadb
+
+2. 创建远程用户
+-----------------------
+CREATE USER 'bazi_user'@'%' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON bazi_db.* TO 'bazi_user'@'%';
+FLUSH PRIVILEGES;
+
+3. 防火墙开放端口
+-----------------------
+sudo ufw allow 3306/tcp
+
+4. 应用配置
+-----------------------
+DATABASE_URL=mysql+pymysql://bazi_user:password@remote-ip:3306/bazi_db
+
+========================================
+六、验证连接
+========================================
+
+方法一：使用 Python 测试
+-----------------------
+python3 -c "
+import pymysql
+conn = pymysql.connect(
+    host='localhost',
+    user='bazi_user',
+    password='your_password',
+    database='bazi_db',
+    charset='utf8mb4'
+)
+print('✅ MariaDB 连接成功!')
+conn.close()
+"
+
+方法二：使用命令行
+-----------------------
+mariadb -u bazi_user -p -h localhost bazi_db
+
+方法三：测试 API
+-----------------------
+curl http://localhost:8000/health
+
+========================================
+七、常见问题
+========================================
+
+Q1: 提示 "command not found: mariadb"
+A1: 使用 mysql 命令代替（MariaDB 兼容）
+    mysql -u root -p
+
+Q2: 连接被拒绝
+A2: 检查服务是否运行
+    sudo systemctl status mariadb
+    sudo systemctl start mariadb
+
+Q3: 认证失败
+A3: 重置密码
+    ALTER USER 'bazi_user'@'localhost' IDENTIFIED BY 'new_password';
+    FLUSH PRIVILEGES;
+
+Q4: 数据库不存在
+A4: 创建数据库
+    CREATE DATABASE bazi_db CHARACTER SET utf8mb4;
+
+========================================
+八、数据库备份
+========================================
+
+# 备份数据库
+mysqldump -u bazi_user -p bazi_db > backup.sql
+# 或
+mariadb-dump -u bazi_user -p bazi_db > backup.sql
+
+# 恢复数据库
+mysql -u bazi_user -p bazi_db < backup.sql
+# 或
+mariadb -u bazi_user -p bazi_db < backup.sql
+
+========================================
+九、性能优化
+========================================
+
+1. 添加索引
+-----------------------
+ALTER TABLE bazi_records ADD INDEX idx_user_id (user_id);
+ALTER TABLE bazi_records ADD INDEX idx_created_at (created_at);
+
+2. 查看慢查询
+-----------------------
+SHOW VARIABLES LIKE 'slow_query%';
+SET GLOBAL slow_query_log = 'ON';
+
+3. 优化表
+-----------------------
+OPTIMIZE TABLE bazi_records;
+
+========================================
+十、安全建议
+========================================
+
+1. 使用强密码
+   - 包含大小写字母
+   - 包含数字和特殊字符
+   - 至少12位
+
+2. 限制用户权限
+   GRANT SELECT, INSERT, UPDATE, DELETE ON bazi_db.* 
+   TO 'bazi_user'@'localhost';
+
+3. 禁止root远程登录
+   DELETE FROM mysql.user WHERE user='root' AND host!='localhost';
+   FLUSH PRIVILEGES;
+
+4. 定期更新
+   sudo apt update
+   sudo apt upgrade mariadb-server
+
+5. 使用SSL连接（生产环境）
+   DATABASE_URL=mysql+pymysql://user:pass@host/db?ssl=true
+
+========================================
+
+✅ 总结：
+- MariaDB 完全兼容，直接使用即可
+- 自动部署脚本会自动识别 MariaDB
+- 无需修改任何代码或配置
+- 使用 mysql+pymysql:// 连接即可
+
+详细文档：backend/MariaDB部署指南.md
+
+如有问题，请查看完整文档或联系技术支持！
+

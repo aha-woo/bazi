@@ -18,7 +18,7 @@
 ## 📋 技术栈
 
 - **后端框架**: FastAPI 0.104+
-- **数据库**: MySQL 5.7+
+- **数据库**: MySQL 5.7+ / MariaDB 10.3+ （完全兼容）
 - **ORM**: SQLAlchemy 2.0+
 - **Python**: 3.8+
 - **服务器**: Uvicorn
@@ -41,11 +41,15 @@ pip install -r requirements.txt
 
 ### 3. 配置数据库
 
-#### 创建MySQL数据库
+#### 创建数据库
+
+支持 MySQL 或 MariaDB（完全兼容）：
 
 ```sql
 CREATE DATABASE bazi_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
+
+**MariaDB 用户**: 使用 `mariadb` 或 `mysql` 命令登录都可以，配置方法完全相同。详见 `MariaDB部署指南.md`
 
 #### 配置环境变量
 
@@ -273,8 +277,10 @@ pip install -r requirements.txt
 #### 3. 配置数据库
 
 ```bash
-# 登录MySQL
+# 登录数据库（MySQL 或 MariaDB）
 sudo mysql
+# 或 MariaDB:
+sudo mariadb
 
 # 创建数据库和用户
 CREATE DATABASE bazi_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -283,6 +289,8 @@ GRANT ALL PRIVILEGES ON bazi_db.* TO 'bazi_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
+
+**注意**: 如果已有 MariaDB 服务，部署脚本会自动检测并使用，无需安装新的数据库。详见 `MariaDB部署指南.md`
 
 #### 4. 配置环境变量
 
